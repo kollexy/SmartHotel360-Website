@@ -5,6 +5,10 @@
 
 trigger:
 - master
+stages:
+- stage: Build
+  jobs:
+  - job: Build
 
 pool:
   vmImage: 'windows-latest'
@@ -14,7 +18,26 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
+stages:
+- stage: Deploy
+  jobs:
+  - job: Deploy
+
+
+pool:
+  vmImage: 'windows-latest' 
+
 steps:
+  -
+- task: AzureRmWebAppDeployment@4
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'azuresp'
+    appType: 'webApp'
+    WebAppName: 'kcltddev'
+    packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
+    -
+
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
@@ -32,3 +55,14 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        downloadPath: '$(System.ArtifactsDirectory)'
